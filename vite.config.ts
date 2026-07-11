@@ -1,6 +1,10 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+  // Local dev/preview serve from '/'. The GitHub Pages workflow sets
+  // VITE_BASE_PATH=/LivingCityEngine/ because the site is hosted under
+  // a sub-path (https://sassydezz.github.io/LivingCityEngine/).
+  base: process.env.VITE_BASE_PATH ?? '/',
   // Serve on all interfaces so the dev build can be opened on a phone
   // over the local network for real-device testing.
   server: {

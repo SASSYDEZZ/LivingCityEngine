@@ -3,6 +3,27 @@
 This guide covers getting the project running locally, on a phone for
 real-device testing, and building for production.
 
+## Live preview (GitHub Pages)
+
+The latest `main` build is deployed automatically to:
+
+**<https://sassydezz.github.io/LivingCityEngine/>**
+
+Open it in any browser — including a phone — to try the current build
+without installing anything.
+
+- Deployment runs via GitHub Actions (`.github/workflows/deploy.yml`)
+  on every push to `main`; progress is visible in the repo's
+  **Actions** tab, and a deploy typically takes 1–2 minutes.
+- A manual re-deploy can be triggered from the Actions tab
+  (**Deploy to GitHub Pages → Run workflow**).
+- The workflow builds with `VITE_BASE_PATH=/LivingCityEngine/` so asset
+  URLs resolve under the github.io sub-path (see `base` in
+  `vite.config.ts`). Local `npm run dev` / `npm run preview` are
+  unaffected and keep serving from `/`.
+- Note: GitHub Pages requires the repository to be public (or a paid
+  GitHub plan for private repos).
+
 ## Prerequisites
 
 - **Node.js 20+** (developed against Node 22)

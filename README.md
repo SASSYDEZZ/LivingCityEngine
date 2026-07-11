@@ -10,6 +10,11 @@ Project vision and standards live alongside the code:
 - [`ROADMAP.md`](ROADMAP.md) — development phases
 - [`AGENTS.md`](AGENTS.md) / [`AI_STUDIO.md`](AI_STUDIO.md) — AI studio workflow and coding rules
 
+## Live preview
+
+Latest `main` build, deployed via GitHub Pages:
+**<https://sassydezz.github.io/LivingCityEngine/>** — works on mobile browsers.
+
 ## Quick start
 
 ```bash
