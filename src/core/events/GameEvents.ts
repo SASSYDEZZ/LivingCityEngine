@@ -26,4 +26,9 @@ export interface GameEvents extends Record<string, unknown> {
   'road:placed': { length: number };
   /** Fired after a road cell is bulldozed. */
   'road:removed': { col: number; row: number };
+  /**
+   * Sound hook: a future AudioSystem subscribes and plays the cue.
+   * Emitted at gameplay moments (placement, demolish, invalid action).
+   */
+  'audio:cue': { cue: 'place' | 'demolish' | 'road' | 'invalid' };
 }

@@ -5,6 +5,8 @@ import type { IScene, SceneContext } from '../../core/IScene';
 import { ConstructionSystem, type PlacedItem } from '../../gameplay/construction/ConstructionSystem';
 import { DEFAULT_GAMEPLAY_CONFIG } from '../../gameplay/GameplayConfig';
 import { BuildGrid } from '../../gameplay/grid/BuildGrid';
+import { RoadNetwork } from '../../gameplay/roads/RoadNetwork';
+import { RoadRenderer } from '../../gameplay/roads/RoadRenderer';
 import { BuildHud } from '../../ui/hud/BuildHud';
 import { CloudSystem } from '../../world/environment/CloudSystem';
 import { DayNightCycle } from '../../world/environment/DayNightCycle';
@@ -72,7 +74,15 @@ export class WorldScene implements IScene {
 
     // Construction (gameplay layer) + HUD (UI layer).
     const grid = new BuildGrid<PlacedItem>(DEFAULT_GAMEPLAY_CONFIG, this.config, this.terrain);
-    const construction = new ConstructionSystem(DEFAULT_GAMEPLAY_CONFIG, grid, context.events);
+    const roadRenderer = new RoadRenderer(DEFAULT_GAMEPLAY_CONFIG, grid);
+    const roadNetwork = new RoadNetwork(grid.cellsPerSide);
+    const construction = new ConstructionSystem(
+      DEFAULT_GAMEPLAY_CONFIG,
+      grid,
+      context.events,
+      roadRenderer,
+      roadNetwork,
+    );
     construction.build(scene, this.terrain, this.camera);
     construction.connectWorld(this.vegetation, this.environment);
     this.construction = construction;

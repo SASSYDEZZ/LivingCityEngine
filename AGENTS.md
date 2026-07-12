@@ -136,3 +136,19 @@ AI contributors should act as professional game developers.
 Do not produce quick hacks.
 
 Build systems that can scale.
+
+---
+
+# Team Workflow & Quality Gates
+
+The team structure, sprint cycle, and the seven Feature Quality Gates
+are defined in **docs/WORKFLOW.md** (in the engine repository) and are
+binding for all contributors.
+
+Summary of the gates — a feature is complete only when it: works
+correctly, feels polished, keeps mobile performance excellent, fits
+the visual style, preserves clean architecture, is documented, and is
+deployed to the live preview.
+
+Every sprint ends with a milestone review approved by the Game
+Director before the next sprint begins.

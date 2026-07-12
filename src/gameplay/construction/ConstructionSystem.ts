@@ -2,6 +2,7 @@ import { PointerEventTypes } from '@babylonjs/core/Events/pointerEvents';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { CreateBox } from '@babylonjs/core/Meshes/Builders/boxBuilder';
+import { CreateCylinder } from '@babylonjs/core/Meshes/Builders/cylinderBuilder';
 // Side-effect import: registers Mesh.prototype.createInstance.
 import '@babylonjs/core/Meshes/instancedMesh';
 import type { InstancedMesh } from '@babylonjs/core/Meshes/instancedMesh';
@@ -20,6 +21,8 @@ import { BUILDING_CATALOG, getBuildingDef, type BuildingDef } from '../buildings
 import { buildBuildingTemplate } from '../buildings/BuildingFactory';
 import type { GameplayConfig } from '../GameplayConfig';
 import type { BuildGrid, GridCell } from '../grid/BuildGrid';
+import type { RoadNetwork } from '../roads/RoadNetwork';
+import type { RoadRenderer } from '../roads/RoadRenderer';
 import { GroundPicker } from './GroundPicker';
 
 export type ConstructionMode = 'view' | 'build' | 'road' | 'bulldoze';
@@ -28,12 +31,14 @@ export type ConstructionMode = 'view' | 'build' | 'road' | 'bulldoze';
 export interface PlacedItem {
   kind: 'building' | 'road';
   defId: string | null;
-  node: InstancedMesh;
+  /** Visual node; null for roads (the RoadRenderer owns road pieces). */
+  node: InstancedMesh | null;
   cells: GridCell[];
 }
 
 interface ScaleAnimation {
   node: InstancedMesh;
+  /** Negative elapsed = start delay (used to stagger road pop-ins). */
   elapsed: number;
   duration: number;
   from: number;
@@ -65,7 +70,6 @@ export class ConstructionSystem {
   private pointerObserver: Observer<PointerInfo> | null = null;
 
   private readonly templates = new Map<string, Mesh>();
-  private roadTemplate: Mesh | null = null;
 
   private mode: ConstructionMode = 'view';
   private selectedBuildingId: string | null = null;
@@ -91,6 +95,8 @@ export class ConstructionSystem {
     private readonly config: GameplayConfig,
     private readonly grid: BuildGrid<PlacedItem>,
     private readonly events: EventBus<GameEvents>,
+    private readonly roadRenderer: RoadRenderer,
+    private readonly roadNetwork: RoadNetwork,
   ) {}
 
   build(scene: Scene, terrain: TerrainSystem, camera: CityCamera): void {
@@ -101,8 +107,9 @@ export class ConstructionSystem {
     for (const def of BUILDING_CATALOG) {
       this.templates.set(def.id, buildBuildingTemplate(scene, def, this.config.cellSize));
     }
-    this.buildRoadTemplate(scene);
+    this.roadRenderer.build(scene, terrain);
     this.buildHighlightPool(scene);
+    this.buildRoadPreview(scene);
 
     this.pointerObserver = scene.onPointerObservable.add((info) => this.onPointer(info));
   }
@@ -164,6 +171,9 @@ export class ConstructionSystem {
     for (let i = this.animations.length - 1; i >= 0; i -= 1) {
       const anim = this.animations[i]!;
       anim.elapsed += deltaSeconds;
+      if (anim.elapsed < 0) {
+        continue; // still in its stagger delay
+      }
       const t = Math.min(anim.elapsed / anim.duration, 1);
       const eased = anim.to > anim.from ? easeOutBack(t) : t * t;
       const scale = anim.from + (anim.to - anim.from) * eased;
@@ -364,6 +374,7 @@ export class ConstructionSystem {
       row: origin.row,
       rotation,
     });
+    this.events.emit('audio:cue', { cue: 'place' });
   }
 
   private bulldoze(cell: GridCell): void {
@@ -372,28 +383,34 @@ export class ConstructionSystem {
       return;
     }
     this.grid.free(item.cells);
-    this.environment?.removeShadowCaster(item.node);
-    this.animations.push({
-      node: item.node,
-      elapsed: 0,
-      duration: 0.25,
-      from: 1,
-      to: 0.01,
-      disposeOnDone: true,
-    });
     const origin = item.cells[0]!;
-    if (item.kind === 'building' && item.defId) {
-      this.events.emit('building:removed', { buildingId: item.defId, col: origin.col, row: origin.row });
-    } else {
+
+    if (item.kind === 'road') {
+      this.roadNetwork.removeCell(origin.col, origin.row);
+      const removed = this.roadRenderer.removeCell(origin);
+      if (removed) {
+        this.animateOut(removed);
+      }
       this.events.emit('road:removed', { col: origin.col, row: origin.row });
+    } else if (item.node) {
+      this.environment?.removeShadowCaster(item.node);
+      this.animateOut(item.node);
+      if (item.defId) {
+        this.events.emit('building:removed', {
+          buildingId: item.defId,
+          col: origin.col,
+          row: origin.row,
+        });
+      }
     }
+    this.events.emit('audio:cue', { cue: 'demolish' });
   }
 
-  private animateIn(node: InstancedMesh): void {
+  private animateIn(node: InstancedMesh, delaySeconds = 0): void {
     node.scaling.set(0.05, 0.05, 0.05);
     this.animations.push({
       node,
-      elapsed: 0,
+      elapsed: -delaySeconds,
       duration: this.config.buildAnimSeconds,
       from: 0.05,
       to: 1,
@@ -401,20 +418,19 @@ export class ConstructionSystem {
     });
   }
 
+  private animateOut(node: InstancedMesh): void {
+    this.animations.push({
+      node,
+      elapsed: 0,
+      duration: 0.25,
+      from: 1,
+      to: 0.01,
+      disposeOnDone: true,
+    });
+  }
+
   // ------------------------------------------------------------------
   // Roads
-
-  private buildRoadTemplate(scene: Scene): void {
-    const size = this.config.cellSize;
-    const template = CreateBox('road-template', { width: size, depth: size, height: 0.18 }, scene);
-    const material = new StandardMaterial('road-mat', scene);
-    material.diffuseColor = new Color3(0.42, 0.4, 0.38);
-    material.specularColor = Color3.Black();
-    template.material = material;
-    template.isVisible = false;
-    template.isPickable = false;
-    this.roadTemplate = template;
-  }
 
   /** L-shaped path between two cells (columns first, then rows). */
   private roadCellsBetween(a: GridCell, b: GridCell): GridCell[] {
@@ -431,35 +447,150 @@ export class ConstructionSystem {
     return cells.slice(0, this.config.maxRoadLength);
   }
 
+  /** Roads may pass through existing road cells (crossings/extensions). */
+  private roadCellOk(cell: GridCell): boolean {
+    if (this.grid.isPlaceable(cell.col, cell.row)) {
+      return true;
+    }
+    const occupant = this.grid.itemAt(cell.col, cell.row);
+    return occupant?.kind === 'road';
+  }
+
   private previewRoad(from: GridCell, to: GridCell): void {
     this.roadPath = this.roadCellsBetween(from, to);
-    this.roadPathValid = this.roadPath.every((c) => this.grid.isPlaceable(c.col, c.row));
+    this.roadPathValid = this.roadPath.every((c) => this.roadCellOk(c));
+
+    // Smooth ribbon along the two legs of the L, capped with dots —
+    // reads as one continuous road-to-be instead of a trail of tiles.
+    this.showRoadRibbon(from, this.roadPath[this.roadPath.length - 1] ?? from, this.roadPathValid);
+    // Blocking cells still get explicit red tiles so the player sees
+    // exactly where the problem is.
     this.showHighlights(
-      this.roadPath.map((cell) => ({ cell, valid: this.grid.isPlaceable(cell.col, cell.row) })),
+      this.roadPath.filter((cell) => !this.roadCellOk(cell)).map((cell) => ({ cell, valid: false })),
     );
     this.emitPreviewState(this.roadPathValid);
   }
 
   private commitRoad(): void {
-    if (!this.roadPathValid || this.roadPath.length === 0 || !this.roadTemplate) {
-      this.hideHighlights();
-      this.roadPath = [];
-      return;
-    }
-    for (const cell of this.roadPath) {
-      const { x, z } = this.grid.cellCenter(cell.col, cell.row);
-      const y = this.grid.cellHeight(cell.col, cell.row);
-      const instance = this.roadTemplate.createInstance(`r${(this.instanceCounter += 1)}`);
-      instance.position.set(x, y + 0.09, z);
-      instance.isPickable = false;
-      const item: PlacedItem = { kind: 'road', defId: null, node: instance, cells: [cell] };
-      this.grid.occupy([cell], item);
-      this.vegetation?.clearArea(x, z, this.config.cellSize * 0.7);
-      this.animateIn(instance);
-    }
-    this.events.emit('road:placed', { length: this.roadPath.length });
+    const path = this.roadPath;
+    this.hideRoadRibbon();
     this.hideHighlights();
     this.roadPath = [];
+    if (!this.roadPathValid || path.length === 0) {
+      if (path.length > 0) {
+        this.events.emit('audio:cue', { cue: 'invalid' });
+      }
+      return;
+    }
+
+    // Cells already carrying road pass through untouched; only claim
+    // the genuinely new ones.
+    const newCells = path.filter((cell) => this.grid.isPlaceable(cell.col, cell.row));
+    if (newCells.length === 0) {
+      return;
+    }
+
+    // Data first: claim cells and update the logical road graph.
+    for (const cell of newCells) {
+      const item: PlacedItem = { kind: 'road', defId: null, node: null, cells: [cell] };
+      this.grid.occupy([cell], item);
+      this.roadNetwork.addCell(cell.col, cell.row);
+      const { x, z } = this.grid.cellCenter(cell.col, cell.row);
+      this.vegetation?.clearArea(x, z, this.config.cellSize * 0.7);
+    }
+
+    // Then visuals: the renderer resolves connected pieces for the
+    // whole path (and its neighbors) at once; pop them in with a
+    // little ripple along the path.
+    const instances = this.roadRenderer.addCells(newCells);
+    instances.forEach((instance, i) => this.animateIn(instance, i * 0.045));
+
+    this.events.emit('road:placed', { length: newCells.length });
+    this.events.emit('audio:cue', { cue: 'road' });
+  }
+
+  // ------------------------------------------------------------------
+  // Road drag ribbon preview
+
+  private ribbonLegs: Mesh[] = [];
+  private ribbonCaps: Mesh[] = [];
+
+  private buildRoadPreview(scene: Scene): void {
+    for (let i = 0; i < 2; i += 1) {
+      const leg = CreateBox(`ribbon-leg-${i}`, { width: 1, depth: 1, height: 0.14 }, scene);
+      leg.isPickable = false;
+      leg.setEnabled(false);
+      this.ribbonLegs.push(leg);
+
+      const cap = CreateCylinder(
+        `ribbon-cap-${i}`,
+        { diameter: this.config.cellSize * 0.62, height: 0.16, tessellation: 20 },
+        scene,
+      );
+      cap.isPickable = false;
+      cap.setEnabled(false);
+      this.ribbonCaps.push(cap);
+    }
+  }
+
+  /** One continuous band along both legs of the L, with endpoint dots. */
+  private showRoadRibbon(from: GridCell, to: GridCell, valid: boolean): void {
+    const material = valid ? this.validTileMaterial : this.invalidTileMaterial;
+    const width = this.config.cellSize * 0.56;
+
+    const a = this.grid.cellCenter(from.col, from.row);
+    const corner = this.grid.cellCenter(to.col, from.row);
+    const b = this.grid.cellCenter(to.col, to.row);
+
+    // Horizontal leg (along X at from.row), then vertical leg (along Z).
+    this.layRibbonLeg(this.ribbonLegs[0]!, a.x, corner.x, a.z, a.z, width, material);
+    this.layRibbonLeg(this.ribbonLegs[1]!, b.x, b.x, corner.z, b.z, width, material);
+
+    const capA = this.ribbonCaps[0]!;
+    capA.position.set(a.x, this.grid.cellHeight(from.col, from.row) + 0.4, a.z);
+    capA.material = material;
+    capA.setEnabled(true);
+    const capB = this.ribbonCaps[1]!;
+    capB.position.set(b.x, this.grid.cellHeight(to.col, to.row) + 0.4, b.z);
+    capB.material = material;
+    capB.setEnabled(true);
+  }
+
+  private layRibbonLeg(
+    leg: Mesh,
+    x0: number,
+    x1: number,
+    z0: number,
+    z1: number,
+    width: number,
+    material: Mesh['material'],
+  ): void {
+    const lengthX = Math.abs(x1 - x0) + width;
+    const lengthZ = Math.abs(z1 - z0) + width;
+    const midX = (x0 + x1) / 2;
+    const midZ = (z0 + z1) / 2;
+    // Float the band just above the terrain along its span.
+    const y =
+      Math.max(
+        this.grid.cellHeight(...this.cellIndexAt(x0, z0)),
+        this.grid.cellHeight(...this.cellIndexAt(x1, z1)),
+        this.grid.cellHeight(...this.cellIndexAt(midX, midZ)),
+      ) + 0.35;
+    leg.scaling.set(lengthX, 1, lengthZ);
+    leg.position.set(midX, y, midZ);
+    leg.material = material;
+    leg.setEnabled(true);
+  }
+
+  private cellIndexAt(x: number, z: number): [number, number] {
+    const cell = this.grid.worldToCell(x, z);
+    return cell ? [cell.col, cell.row] : [0, 0];
+  }
+
+  private hideRoadRibbon(): void {
+    for (const mesh of [...this.ribbonLegs, ...this.ribbonCaps]) {
+      mesh.setEnabled(false);
+    }
   }
 
   // ------------------------------------------------------------------
@@ -514,6 +645,7 @@ export class ConstructionSystem {
     this.roadAnchor = null;
     this.roadPath = [];
     this.hideHighlights();
+    this.hideRoadRibbon();
   }
 
   private emitPreviewState(validOverride?: boolean): void {

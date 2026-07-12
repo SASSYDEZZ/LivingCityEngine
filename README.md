@@ -33,10 +33,21 @@ Sprint 1 design decisions: **[docs/SETUP.md](docs/SETUP.md)**.
 | v0.1.5 World Prototype | ![World Prototype](docs/progress/v0.1.5-world-prototype.png) |
 | v0.2.0 Living World | ![Living World](docs/progress/v0.2.0-living-world.png) |
 | v0.3.0 Construction | ![Construction](docs/progress/v0.3.0-construction.png) |
+| v0.4.0 Road Network v2 | ![Road Network](docs/progress/v0.4.0-road-network.png) |
 
 ## Status
 
-**Sprint 3 — Construction System** (v0.3.0, current):
+**Sprint 4 Phase A–C — Road Network v2** (v0.4.0, current):
+
+- ✅ Auto-connecting road pieces: straights, corners, tees, crossroads form as you draw
+- ✅ Sidewalks, crosswalk corner nubs, and dashed lane markings on every piece
+- ✅ Terrain conformity: pieces tilt to the smoothed terrain gradient; earth embankment sides
+- ✅ Roads cross/extend existing roads (intersections by drawing through)
+- ✅ Smooth drag preview: continuous ribbon with endpoint dots (🟢══🟢), red tiles mark blockers
+- ✅ Staggered pop-in along committed paths; audio cue hooks (`audio:cue` events)
+- ✅ `RoadNetwork` graph with BFS pathfinding — the citizen/traffic foundation (unit-tested)
+
+**Sprint 3 — Construction System** (v0.3.0, complete):
 
 - ✅ Terrain-aware build grid (precomputed buildability: height band + slope)
 - ✅ Ghost building preview with green/red validity highlighting

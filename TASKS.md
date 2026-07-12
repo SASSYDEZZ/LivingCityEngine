@@ -9,16 +9,34 @@ Last updated: 2026-07-12
 
 ## Current sprint
 
-**Sprint 3 — Construction System (v0.3.0)** — complete.
+**Sprint 4 — Phase A–C: Road Network v2 (v0.4.0)** — complete.
 
-Goal: let players build on the island. ✅
+Goal: transform placeholder road slabs into a polished, continuous,
+citizen-ready road network. ✅
 
-Next up: Sprint 4 — City Simulation (Phase 4): citizens, homes, jobs,
-needs, economy.
+Next up: Sprint 4 continues — City Simulation (Phase 4): citizens,
+homes, jobs, needs, economy (building on the RoadNetwork graph).
 
 ---
 
 ## Completed tasks
+
+### Sprint 4 Phase A–C — Road Network v2 (v0.4.0)
+
+- [x] Six auto-connecting piece types via neighbor bitmask (isolated/end/straight/corner/tee/cross) (`gameplay/roads/RoadPieces.ts`)
+- [x] `RoadRenderer`: cell→instance map, refreshes placed cells + neighbors on every change (`gameplay/roads/RoadRenderer.ts`)
+- [x] Sidewalks on open edges, crosswalk corner nubs at junctions, dashed lane markings
+- [x] Terrain conformity: smoothed-gradient tilt per piece, deep slabs with earth embankment sides
+- [x] Roads pass through existing roads — crossings and extensions just work
+- [x] Ribbon drag preview (continuous band + endpoint dots) with red tiles on blockers
+- [x] Staggered pop-in animation along committed paths
+- [x] `audio:cue` event hooks (place/demolish/road/invalid) for the future AudioSystem
+- [x] `RoadNetwork` graph: neighbors, connectivity, BFS shortest path — dependency-free, 9 logic tests pass
+- [x] Workflow standards recorded: `docs/WORKFLOW.md` + AGENTS.md quality gates
+
+---
+
+## Completed tasks (earlier sprints)
 
 ### Sprint 3 — Construction System (v0.3.0)
 
@@ -85,10 +103,11 @@ needs, economy.
 
 ### Construction polish (as needed)
 
-- [ ] Connected road pieces (straight/corner/junction visuals)
-- [ ] Terrain flattening under buildings on slopes
+- [ ] Terrain flattening under buildings/roads on slopes (steepest cells can show slivers at seams)
 - [ ] Save/load of placed buildings and roads
 - [ ] Two-finger camera pan while a tool is active
+- [ ] Curved corner road geometry (arc instead of square bend)
+- [ ] Bridges (road cells over water with deck height + pylons)
 
 ### World polish (long-term visual goals)
 

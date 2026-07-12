@@ -59,7 +59,7 @@ an animated ocean, a full day/night cycle, and a city-builder camera.
 | Action | How |
 | --- | --- |
 | Place a building | Pick 🏠/🏡, tap the ground to position the ghost, ⟳ to rotate, ✓ to confirm |
-| Draw a road | Pick 🛣️, then drag across the ground (snaps to an L-shaped grid path) |
+| Draw a road | Pick 🛣️, then drag across the ground (snaps to an L-shaped grid path); draw through existing roads to make intersections |
 | Demolish | Pick 🚜, tap a building or road cell |
 | Exit a tool | ✕ (camera control returns) |
 
@@ -109,11 +109,14 @@ src/
   rendering/            Visuals: scenes, cameras, lighting, materials
     camera/CityCamera.ts     Touch-friendly city-builder camera rig
     scenes/WorldScene.ts     Composes and ticks the world systems
-  gameplay/             Player interaction (Phase 3)
+  gameplay/             Player interaction (Phase 3+)
     GameplayConfig.ts        Grid/placement tuning data
     grid/BuildGrid.ts        Terrain-aware grid: cells, buildability, occupancy
     buildings/               BuildingCatalog (data) + BuildingFactory (meshes)
     construction/            ConstructionSystem (tools) + GroundPicker
+    roads/                   RoadPieces (piece meshes + bitmask resolution),
+                             RoadRenderer (auto-connecting instances),
+                             RoadNetwork (logical graph + pathfinding)
   ui/                   Player interface
     hud/BuildHud.ts          DOM construction toolbar (touch-first)
   world/                The game world
@@ -127,8 +130,6 @@ src/
     environment/             DayNightCycle, SkySystem (stars/moon),
                              CloudSystem, EnvironmentSystem
   simulation/           (reserved — Phase 4: citizens, economy, traffic)
-  gameplay/             (reserved — Phase 3: buildings, roads, zoning)
-  ui/                   (reserved — menus, HUD, touch controls)
 docs/                   Project documentation
 ```
 
