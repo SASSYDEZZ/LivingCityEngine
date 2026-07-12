@@ -9,15 +9,28 @@ Last updated: 2026-07-12
 
 ## Current sprint
 
-**Sprint 2 — World Prototype (Phase 2)** — core goals complete.
+**Sprint 2 — Living World (v0.2.0)** — complete.
 
-Goal: a beautiful empty world that can be explored on a phone. ✅
+Goal: make the island feel beautiful, inviting, and alive. ✅
 
-Next up: Sprint 3 — Construction System (Phase 3).
+Next up: Sprint 3 — Construction System (Phase 3): grid, building
+placement, roads, bulldozer.
 
 ---
 
 ## Completed tasks
+
+### Sprint 2 — Living World (v0.2.0)
+
+- [x] Instanced vegetation: clustered forests (round + pine), rocks, bushes — 4 draw calls (`world/vegetation/`)
+- [x] Terrain height/slope sampling API for placement (`TerrainSystem.sampleHeight/sampleSlope`)
+- [x] Shoreline foam driven by a generated shore-mask texture; animated, dims at night
+- [x] Water polish: per-pixel ripples, distance-faded waves/glints (anti-moiré)
+- [x] Drifting clouds (thin-instanced, tinted by time of day) (`CloudSystem`)
+- [x] Night sky: procedural starfield + low visible moon (`SkySystem`)
+- [x] Ambient birds gliding over the island by day (`world/wildlife/BirdSystem`)
+- [x] Warm cozy palette pass: terrain, sky, fog, tropical water
+- [x] Milestone screenshots in `docs/progress/`; version bumped to 0.2.0
 
 ### Sprint 2 — World Prototype (Phase 2)
 
@@ -54,11 +67,12 @@ Next up: Sprint 3 — Construction System (Phase 3).
 
 ## Upcoming tasks
 
-### Sprint 2 polish (optional, as needed)
+### World polish (optional, as needed)
 
 - [ ] Touch control tuning on real devices (pan/pinch feel)
 - [ ] Weather foundation (Phase 2 stretch; effects are Phase 6)
 - [ ] Game speed controls for the day/night clock
+- [ ] Camera-terrain collision (camera can clip into hills at min zoom)
 
 ### Sprint 3 — Construction System (Phase 3)
 

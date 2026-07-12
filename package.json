@@ -1,7 +1,7 @@
 {
   "name": "livingcityengine",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "LivingCityEngine — a modular, mobile-first city simulation engine built with TypeScript and Babylon.js.",
   "type": "module",
   "scripts": {

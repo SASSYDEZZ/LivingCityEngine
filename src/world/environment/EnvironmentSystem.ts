@@ -19,29 +19,36 @@ interface AtmospherePalette {
   readonly fog: Color3;
 }
 
+// Cozy stylized palettes: saturated day, golden twilight, indigo night.
 const DAY: AtmospherePalette = {
-  zenith: new Color3(0.22, 0.47, 0.8),
-  horizon: new Color3(0.66, 0.8, 0.92),
-  sun: new Color3(1.0, 0.96, 0.86),
-  fog: new Color3(0.7, 0.8, 0.9),
+  zenith: new Color3(0.25, 0.52, 0.88),
+  horizon: new Color3(0.74, 0.86, 0.95),
+  sun: new Color3(1.0, 0.95, 0.8),
+  fog: new Color3(0.75, 0.85, 0.93),
 };
 
 const TWILIGHT: AtmospherePalette = {
-  zenith: new Color3(0.17, 0.19, 0.38),
-  horizon: new Color3(0.93, 0.52, 0.3),
-  sun: new Color3(1.0, 0.5, 0.22),
-  fog: new Color3(0.5, 0.4, 0.42),
+  zenith: new Color3(0.24, 0.2, 0.44),
+  horizon: new Color3(0.99, 0.58, 0.33),
+  sun: new Color3(1.0, 0.52, 0.2),
+  fog: new Color3(0.62, 0.45, 0.46),
 };
 
 const NIGHT: AtmospherePalette = {
-  zenith: new Color3(0.02, 0.035, 0.09),
-  horizon: new Color3(0.07, 0.1, 0.17),
+  zenith: new Color3(0.02, 0.035, 0.1),
+  horizon: new Color3(0.08, 0.11, 0.19),
   sun: new Color3(0, 0, 0),
-  fog: new Color3(0.05, 0.07, 0.12),
+  fog: new Color3(0.06, 0.08, 0.13),
 };
 
-const WATER_DEEP_BASE = new Color3(0.05, 0.21, 0.33);
-const WATER_SHALLOW_BASE = new Color3(0.14, 0.46, 0.55);
+// Tropical, inviting water.
+const WATER_DEEP_BASE = new Color3(0.04, 0.26, 0.38);
+const WATER_SHALLOW_BASE = new Color3(0.16, 0.55, 0.58);
+
+// Cloud tints per lighting state (emissive, unlit).
+const CLOUD_DAY = new Color3(0.98, 0.99, 1.0);
+const CLOUD_TWILIGHT = new Color3(1.0, 0.72, 0.58);
+const CLOUD_NIGHT = new Color3(0.16, 0.19, 0.28);
 
 /**
  * Sky, sunlight, ambient light, shadows, and fog — everything that
@@ -56,13 +63,20 @@ export class EnvironmentSystem {
   private readonly sky = new SkySystem();
   private scene: Scene | null = null;
 
-  // Current-frame values, exposed to other systems (ocean).
+  // Current-frame values, exposed to other systems (ocean, clouds, birds).
   readonly sunDirection = new Vector3(0, -1, 0);
+  readonly moonDirection = new Vector3(0, -1, 0);
   readonly sunColor = new Color3(1, 1, 1);
   readonly fogColor = new Color3(0, 0, 0);
   readonly waterDeepColor = new Color3(0, 0, 0);
   readonly waterShallowColor = new Color3(0, 0, 0);
+  readonly cloudColor = new Color3(1, 1, 1);
+  /** 1 at deep night, 0 by day — drives stars/moon. */
+  nightFactor = 0;
+  /** 1 by day, 0 at deep night — drives birds. */
+  dayFactor = 1;
   fogDensity = 0.0018;
+  private elapsedSeconds = 0;
 
   constructor(private readonly config: WorldConfig) {}
 
@@ -96,10 +110,11 @@ export class EnvironmentSystem {
   }
 
   /** Advance the atmosphere to the given time of day (0..1). */
-  update(timeOfDay: number, sunElevation: number): void {
+  update(timeOfDay: number, sunElevation: number, deltaSeconds = 0): void {
     if (!this.sun || !this.ambient || !this.scene) {
       return;
     }
+    this.elapsedSeconds += deltaSeconds;
 
     // Sun position on its orbit: elevation from the day cycle, azimuth
     // sweeping a full circle per day. Peak elevation is capped (~61°)
@@ -110,12 +125,24 @@ export class EnvironmentSystem {
     this.sunDirection
       .set(-cosE * Math.cos(azimuth), -Math.sin(elevationAngle), -cosE * Math.sin(azimuth))
       .normalize();
+    // Visual moon position: opposite azimuth from the sun but held low
+    // over the horizon (~14°) so it's actually visible in the game's
+    // downward-tilted framing. Moonlight direction is handled
+    // separately below and stays high for pleasant illumination.
+    const moonAzimuth = azimuth + Math.PI;
+    const moonElevation = Math.PI * 0.078;
+    const cosM = Math.cos(moonElevation);
+    this.moonDirection
+      .set(-cosM * Math.cos(moonAzimuth), -Math.sin(moonElevation), -cosM * Math.sin(moonAzimuth))
+      .normalize();
 
     // Palette weights from sun elevation: night below the horizon,
     // twilight around it, day above.
     const dayW = smoothstep(0.06, 0.35, sunElevation);
     const nightW = smoothstep(0.1, 0.32, -sunElevation);
     const twilightW = Math.max(0, 1 - dayW - nightW);
+    this.nightFactor = nightW;
+    this.dayFactor = dayW;
 
     const zenith = blend3(NIGHT.zenith, TWILIGHT.zenith, DAY.zenith, nightW, twilightW, dayW);
     const horizon = blend3(NIGHT.horizon, TWILIGHT.horizon, DAY.horizon, nightW, twilightW, dayW);
@@ -153,8 +180,19 @@ export class EnvironmentSystem {
       WATER_SHALLOW_BASE.b * brightness,
     );
 
+    blend3Into(this.cloudColor, CLOUD_NIGHT, CLOUD_TWILIGHT, CLOUD_DAY, nightW, twilightW, dayW);
+
     this.scene.fogColor = this.fogColor;
-    this.sky.setAtmosphere(zenith, horizon, this.sunDirection, this.sunColor, this.fogColor);
+    this.sky.setAtmosphere(
+      zenith,
+      horizon,
+      this.sunDirection,
+      this.sunColor,
+      this.fogColor,
+      this.moonDirection,
+      nightW,
+      this.elapsedSeconds,
+    );
   }
 
   dispose(): void {

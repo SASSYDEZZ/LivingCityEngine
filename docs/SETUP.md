@@ -96,11 +96,16 @@ src/
   rendering/            Visuals: scenes, cameras, lighting, materials
     camera/CityCamera.ts     Touch-friendly city-builder camera rig
     scenes/WorldScene.ts     Composes and ticks the world systems
-  world/                The game world (Phase 2)
+  world/                The game world
     WorldConfig.ts           All world-generation/environment tuning data
-    terrain/                 ValueNoise2D + TerrainSystem (procedural island)
-    water/                   OceanSystem (GPU wave shader + seafloor)
-    environment/             DayNightCycle, SkySystem, EnvironmentSystem
+    SeededRandom.ts          Deterministic PRNG for world decoration
+    terrain/                 ValueNoise2D + TerrainSystem (procedural island,
+                             height/slope sampling, shore mask)
+    water/                   OceanSystem (GPU waves, ripples, shoreline foam)
+    vegetation/              VegetationSystem (thin-instanced trees/rocks/bushes)
+    wildlife/                BirdSystem (ambient gliding birds)
+    environment/             DayNightCycle, SkySystem (stars/moon),
+                             CloudSystem, EnvironmentSystem
   simulation/           (reserved — Phase 4: citizens, economy, traffic)
   gameplay/             (reserved — Phase 3: buildings, roads, zoning)
   ui/                   (reserved — menus, HUD, touch controls)
@@ -142,7 +147,14 @@ references; every cross-system event is declared in `GameEvents.ts`.
   `WorldConfig.shadowsEnabled`.
 - **No per-move picking** — `scene.skipPointerMovePicking` is on until
   gameplay needs hover/tap picking.
-- All tuning lives in `src/world/WorldConfig.ts`.
+- **Thin instances everywhere** — hundreds of trees/rocks/bushes cost 4
+  draw calls; all clouds 1; all birds 1. Only trees join the shadow map.
+- **Generated shore mask** — foam reads a 129×129 texture built from
+  the terrain height grid at startup; nothing is downloaded.
+- **Distance-faded water detail** — waves, ripples, and glints fade with
+  distance so far water is flat and alias-free.
+- All tuning (counts, sizes, day length, shadows) lives in
+  `src/world/WorldConfig.ts`; set any count to 0 to disable a system.
 
 ## What the world prototype deliberately does NOT include
 

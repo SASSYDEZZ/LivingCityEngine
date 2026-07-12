@@ -28,6 +28,18 @@ export interface WorldConfig {
   readonly shadowsEnabled: boolean;
   /** Shadow map resolution. 1024 balances quality and mobile fill rate. */
   readonly shadowMapSize: number;
+  /** Number of trees scattered on the island (0 disables). */
+  readonly treeCount: number;
+  /** Number of rocks scattered on the island (0 disables). */
+  readonly rockCount: number;
+  /** Number of bushes scattered on the island (0 disables). */
+  readonly bushCount: number;
+  /** Number of drifting cloud clusters (0 disables). */
+  readonly cloudCount: number;
+  /** Altitude of the cloud layer in world units. */
+  readonly cloudHeight: number;
+  /** Number of ambient birds circling the island (0 disables). */
+  readonly birdCount: number;
 }
 
 export const DEFAULT_WORLD_CONFIG: WorldConfig = {
@@ -42,4 +54,10 @@ export const DEFAULT_WORLD_CONFIG: WorldConfig = {
   initialTimeOfDay: 0.35,
   shadowsEnabled: true,
   shadowMapSize: 1024,
+  treeCount: 320,
+  rockCount: 70,
+  bushCount: 170,
+  cloudCount: 10,
+  cloudHeight: 110,
+  birdCount: 7,
 };

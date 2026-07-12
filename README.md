@@ -25,9 +25,27 @@ npm run dev
 Then open the printed URL. Full instructions, project structure, and
 Sprint 1 design decisions: **[docs/SETUP.md](docs/SETUP.md)**.
 
+## Progress
+
+| Milestone | |
+| --- | --- |
+| v0.1.0 Foundation | ![Foundation](docs/progress/v0.1.0-foundation.png) |
+| v0.1.5 World Prototype | ![World Prototype](docs/progress/v0.1.5-world-prototype.png) |
+| v0.2.0 Living World | ![Living World](docs/progress/v0.2.0-living-world.png) |
+
 ## Status
 
-**Phase 2 — World Prototype** (current):
+**Sprint 2 — Living World** (v0.2.0, current):
+
+- ✅ Instanced vegetation: clustered forests (round + pine trees), rocks, bushes — 4 draw calls total
+- ✅ Shoreline foam hugging the coast, driven by a generated shore mask (no textures downloaded)
+- ✅ Drifting clouds that glow warm at sunset and dim at night
+- ✅ Night sky: procedural starfield and a low moon over the horizon
+- ✅ Ambient birds gliding over the island by day
+- ✅ Water detail: per-pixel ripples and sun glints, distance-faded to prevent aliasing
+- ✅ Warm, saturated "cozy" palette pass across terrain, sky, and water
+
+**Phase 2 — World Prototype** (complete):
 
 - ✅ Procedural island terrain (seeded noise, vertex-color biomes: sand/grass/rock/snow)
 - ✅ Animated ocean with GPU wave shader and shoreline transparency

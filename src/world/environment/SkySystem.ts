@@ -30,6 +30,13 @@ uniform vec3 uHorizonColor;
 uniform vec3 uSunDir;   // direction the light travels (from sun toward scene)
 uniform vec3 uSunColor;
 uniform vec3 uFogColor;
+uniform vec3 uMoonDir;  // direction moonlight travels
+uniform float uNight;   // 0 = day, 1 = deep night
+uniform float uTime;
+
+float hash21(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
 
 void main() {
   vec3 dir = normalize(vDirection);
@@ -42,6 +49,25 @@ void main() {
   vec3 toSun = normalize(-uSunDir);
   float d = max(dot(dir, toSun), 0.0);
   color += uSunColor * (pow(d, 600.0) * 1.4 + pow(d, 6.0) * 0.18);
+
+  // Night sky: procedural star field (cellular hash — sparse, cheap)
+  // and a pale moon disc with a soft glow, both fading in with uNight.
+  if (uNight > 0.01) {
+    vec2 grid = vec2(atan(dir.z, dir.x) * 4.0, dir.y * 9.0);
+    vec2 cell = floor(grid * 6.0);
+    vec2 f = fract(grid * 6.0);
+    float h = hash21(cell);
+    vec2 starPos = vec2(h, hash21(cell + 17.3)) * 0.7 + 0.15;
+    float star = 1.0 - smoothstep(0.02, 0.07, length(f - starPos));
+    float present = step(0.72, hash21(cell + 5.1)); // ~28% of cells
+    float twinkle = 0.7 + 0.3 * sin(uTime * 2.5 + h * 44.0);
+    color += vec3(0.85, 0.9, 1.0) * 1.15 * star * present * twinkle * uNight
+           * smoothstep(0.02, 0.1, dir.y);
+
+    vec3 toMoon = normalize(-uMoonDir);
+    float m = max(dot(dir, toMoon), 0.0);
+    color += vec3(0.8, 0.86, 0.95) * (pow(m, 900.0) * 1.1 + pow(m, 12.0) * 0.1) * uNight;
+  }
 
   // Converge to the scene fog color at and below the horizon — applied
   // last so it exactly matches the fully fogged ocean and the plane
@@ -87,6 +113,9 @@ export class SkySystem {
           'uSunDir',
           'uSunColor',
           'uFogColor',
+          'uMoonDir',
+          'uNight',
+          'uTime',
         ],
       },
     );
@@ -105,6 +134,9 @@ export class SkySystem {
     sunDirection: Vector3,
     sunColor: Color3,
     fogColor: Color3,
+    moonDirection: Vector3,
+    nightFactor: number,
+    timeSeconds: number,
   ): void {
     if (!this.material) {
       return;
@@ -114,6 +146,9 @@ export class SkySystem {
     this.material.setVector3('uSunDir', sunDirection);
     this.material.setColor3('uSunColor', sunColor);
     this.material.setColor3('uFogColor', fogColor);
+    this.material.setVector3('uMoonDir', moonDirection);
+    this.material.setFloat('uNight', nightFactor);
+    this.material.setFloat('uTime', timeSeconds);
   }
 
   dispose(): void {
