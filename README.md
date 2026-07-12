@@ -27,13 +27,19 @@ Sprint 1 design decisions: **[docs/SETUP.md](docs/SETUP.md)**.
 
 ## Status
 
-**Sprint 1 — Foundation** (Phase 1 of the roadmap):
+**Phase 2 — World Prototype** (current):
 
-- ✅ TypeScript (strict) + Vite project setup
-- ✅ Babylon.js integration with tree-shaken imports
-- ✅ Layered folder structure (`core` / `rendering` / `world` / `simulation` / `gameplay` / `ui`)
-- ✅ Engine lifecycle: `GameEngine`, `SceneManager`, typed `EventBus`
-- ✅ First runnable scene (`SandboxScene`) with orbit/touch camera
-- ✅ Mobile-first defaults: pixel-ratio cap, fullscreen touch canvas
+- ✅ Procedural island terrain (seeded noise, vertex-color biomes: sand/grass/rock/snow)
+- ✅ Animated ocean with GPU wave shader and shoreline transparency
+- ✅ Day/night cycle: orbiting sun, moonlit nights, dawn/dusk palettes
+- ✅ Gradient sky dome, distance fog, terrain shadows
+- ✅ City-builder camera: orbit/pan/zoom with touch + pinch, map bounds
+- ✅ Demo URL params: `?tod=` (time of day), `?daylen=`, `?seed=`
+
+**Phase 1 — Foundation** (complete): TypeScript (strict) + Vite,
+tree-shaken Babylon.js, layered architecture (`core` / `rendering` /
+`world` / `simulation` / `gameplay` / `ui`), `GameEngine` /
+`SceneManager` / typed `EventBus`, mobile-first defaults, GitHub Pages
+auto-deploy.
 
 No gameplay systems yet — by design. See [`ROADMAP.md`](ROADMAP.md) for what comes next.

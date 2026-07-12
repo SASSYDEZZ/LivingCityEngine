@@ -43,8 +43,8 @@ npm run dev
 ```
 
 Vite prints a local URL (default `http://localhost:5173`). Open it in a
-browser — you should see the Sprint 1 sandbox scene: a ground plane, a
-grid of placeholder blocks, and a rotating orange beacon at the origin.
+browser — you should see the world prototype: a procedural island with
+an animated ocean, a full day/night cycle, and a city-builder camera.
 
 ### Controls
 
@@ -52,7 +52,15 @@ grid of placeholder blocks, and a rotating orange beacon at the origin.
 | --- | --- |
 | Left-drag / one-finger drag | Orbit the camera |
 | Mouse wheel / two-finger pinch | Zoom |
-| Right-drag / two-finger drag | Pan |
+| Right-drag / two-finger drag | Pan across the map |
+
+### URL parameters (dev/demo)
+
+| Param | Meaning | Example |
+| --- | --- | --- |
+| `tod` | Starting time of day, 0..1 (0 = midnight, 0.5 = noon) | `?tod=0.75` (sunset) |
+| `daylen` | Seconds per full day/night cycle (default 180) | `?daylen=30` |
+| `seed` | Terrain generation seed | `?seed=42` |
 
 ### Testing on a phone
 
@@ -86,8 +94,13 @@ src/
     config/             EngineConfig (pixel-ratio cap, clear color, …)
     events/             Typed EventBus + GameEvents registry
   rendering/            Visuals: scenes, cameras, lighting, materials
-    scenes/SandboxScene.ts   Sprint 1 runnable scene
-  world/                (reserved — Phase 2: terrain, weather, day/night)
+    camera/CityCamera.ts     Touch-friendly city-builder camera rig
+    scenes/WorldScene.ts     Composes and ticks the world systems
+  world/                The game world (Phase 2)
+    WorldConfig.ts           All world-generation/environment tuning data
+    terrain/                 ValueNoise2D + TerrainSystem (procedural island)
+    water/                   OceanSystem (GPU wave shader + seafloor)
+    environment/             DayNightCycle, SkySystem, EnvironmentSystem
   simulation/           (reserved — Phase 4: citizens, economy, traffic)
   gameplay/             (reserved — Phase 3: buildings, roads, zoning)
   ui/                   (reserved — menus, HUD, touch controls)
@@ -114,10 +127,27 @@ references; every cross-system event is declared in `GameEvents.ts`.
 - **Touch-first canvas** — `touch-action: none`, no page scrolling or
   rubber-banding; Babylon receives all gestures.
 
-## What Sprint 1 deliberately does NOT include
+## Mobile performance notes (world prototype)
 
-No gameplay systems: no terrain generation, citizens, economy, building
-placement, or UI. Those arrive in the phases defined in `ROADMAP.md`.
-PWA packaging (manifest + service worker) is also deferred; the HTML
-meta tags are already mobile-app friendly so it can be layered on
-without restructuring.
+- **Static terrain, frozen after build** — one displaced ground mesh
+  (~33k triangles at 128 subdivisions), vertex-colored (no textures),
+  world matrix and material frozen; zero per-frame CPU cost.
+- **GPU-only water animation** — waves are sine displacement in the
+  vertex shader; the CPU never touches vertices. No reflection or
+  refraction render targets.
+- **Shader sky dome** — a two-color gradient shader on one sphere; no
+  cube maps or sky textures to download.
+- **Single shadow map** — one 1024px map for the sun with terrain
+  self-shadowing only; PCF-filtered (WebGL2). Toggleable via
+  `WorldConfig.shadowsEnabled`.
+- **No per-move picking** — `scene.skipPointerMovePicking` is on until
+  gameplay needs hover/tap picking.
+- All tuning lives in `src/world/WorldConfig.ts`.
+
+## What the world prototype deliberately does NOT include
+
+No gameplay systems: no buildings, citizens, economy, or UI — those
+arrive in the phases defined in `ROADMAP.md`. Weather effects and
+seasons are Phase 6. PWA packaging (manifest + service worker) is also
+deferred; the HTML meta tags are already mobile-app friendly so it can
+be layered on without restructuring.
