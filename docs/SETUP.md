@@ -54,6 +54,19 @@ an animated ocean, a full day/night cycle, and a city-builder camera.
 | Mouse wheel / two-finger pinch | Zoom |
 | Right-drag / two-finger drag | Pan across the map |
 
+### Building (HUD toolbar at the bottom)
+
+| Action | How |
+| --- | --- |
+| Place a building | Pick 🏠/🏡, tap the ground to position the ghost, ⟳ to rotate, ✓ to confirm |
+| Draw a road | Pick 🛣️, then drag across the ground (snaps to an L-shaped grid path) |
+| Demolish | Pick 🚜, tap a building or road cell |
+| Exit a tool | ✕ (camera control returns) |
+
+Green highlights mean placeable; red means blocked (water, steep
+slopes, high peaks, or occupied cells). While a tool is active the
+camera ignores drags so touch input goes to the tool.
+
 ### URL parameters (dev/demo)
 
 | Param | Meaning | Example |
@@ -96,6 +109,13 @@ src/
   rendering/            Visuals: scenes, cameras, lighting, materials
     camera/CityCamera.ts     Touch-friendly city-builder camera rig
     scenes/WorldScene.ts     Composes and ticks the world systems
+  gameplay/             Player interaction (Phase 3)
+    GameplayConfig.ts        Grid/placement tuning data
+    grid/BuildGrid.ts        Terrain-aware grid: cells, buildability, occupancy
+    buildings/               BuildingCatalog (data) + BuildingFactory (meshes)
+    construction/            ConstructionSystem (tools) + GroundPicker
+  ui/                   Player interface
+    hud/BuildHud.ts          DOM construction toolbar (touch-first)
   world/                The game world
     WorldConfig.ts           All world-generation/environment tuning data
     SeededRandom.ts          Deterministic PRNG for world decoration

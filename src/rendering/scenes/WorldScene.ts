@@ -2,6 +2,10 @@ import { Color4 } from '@babylonjs/core/Maths/math.color';
 import { Scene } from '@babylonjs/core/scene';
 
 import type { IScene, SceneContext } from '../../core/IScene';
+import { ConstructionSystem, type PlacedItem } from '../../gameplay/construction/ConstructionSystem';
+import { DEFAULT_GAMEPLAY_CONFIG } from '../../gameplay/GameplayConfig';
+import { BuildGrid } from '../../gameplay/grid/BuildGrid';
+import { BuildHud } from '../../ui/hud/BuildHud';
 import { CloudSystem } from '../../world/environment/CloudSystem';
 import { DayNightCycle } from '../../world/environment/DayNightCycle';
 import { EnvironmentSystem } from '../../world/environment/EnvironmentSystem';
@@ -33,6 +37,8 @@ export class WorldScene implements IScene {
   private readonly birds: BirdSystem;
   private readonly dayNight: DayNightCycle;
   private readonly camera = new CityCamera();
+  private construction: ConstructionSystem | null = null;
+  private hud: BuildHud | null = null;
 
   constructor(configOverrides: Partial<WorldConfig> = {}) {
     this.config = { ...DEFAULT_WORLD_CONFIG, ...configOverrides };
@@ -64,6 +70,34 @@ export class WorldScene implements IScene {
     // Terrain and trees cast shadows onto the terrain.
     this.environment.build(scene, [terrainMesh, ...vegetationCasters]);
 
+    // Construction (gameplay layer) + HUD (UI layer).
+    const grid = new BuildGrid<PlacedItem>(DEFAULT_GAMEPLAY_CONFIG, this.config, this.terrain);
+    const construction = new ConstructionSystem(DEFAULT_GAMEPLAY_CONFIG, grid, context.events);
+    construction.build(scene, this.terrain, this.camera);
+    construction.connectWorld(this.vegetation, this.environment);
+    this.construction = construction;
+
+    const hud = new BuildHud(
+      {
+        selectBuilding: (id) =>
+          construction.currentMode === 'build' && construction.currentBuildingId === id
+            ? construction.cancel()
+            : construction.setMode('build', id),
+        selectRoad: () =>
+          construction.currentMode === 'road' ? construction.cancel() : construction.setMode('road'),
+        selectBulldoze: () =>
+          construction.currentMode === 'bulldoze'
+            ? construction.cancel()
+            : construction.setMode('bulldoze'),
+        rotate: () => construction.rotateGhost(),
+        confirm: () => construction.confirmPlacement(),
+        cancel: () => construction.cancel(),
+      },
+      context.events,
+    );
+    hud.mount(document.body);
+    this.hud = hud;
+
     // Apply the initial time of day before the first frame renders.
     this.environment.update(this.dayNight.timeOfDay, this.dayNight.sunElevation);
 
@@ -74,6 +108,7 @@ export class WorldScene implements IScene {
     this.dayNight.update(deltaSeconds);
     this.environment.update(this.dayNight.timeOfDay, this.dayNight.sunElevation, deltaSeconds);
     this.camera.update();
+    this.construction?.update(deltaSeconds);
     this.clouds.update(deltaSeconds, this.environment.cloudColor);
     this.birds.update(deltaSeconds, this.environment.dayFactor);
     this.ocean.update(
@@ -89,6 +124,10 @@ export class WorldScene implements IScene {
   }
 
   dispose(): void {
+    this.hud?.dispose();
+    this.hud = null;
+    this.construction?.dispose();
+    this.construction = null;
     this.birds.dispose();
     this.clouds.dispose();
     this.ocean.dispose();

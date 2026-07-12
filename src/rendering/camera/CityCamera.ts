@@ -16,9 +16,33 @@ import type { Scene } from '@babylonjs/core/scene';
  */
 export class CityCamera {
   private camera: ArcRotateCamera | null = null;
+  private canvas: HTMLCanvasElement | null = null;
   private boundsRadius = Infinity;
+  private pointerControlEnabled = true;
+
+  /** The underlying Babylon camera (for picking rays). */
+  get arcCamera(): ArcRotateCamera | null {
+    return this.camera;
+  }
+
+  /**
+   * Enable/disable camera pointer control. Construction modes disable
+   * it so taps and drags drive tools instead of orbiting the camera.
+   */
+  setPointerControlEnabled(enabled: boolean): void {
+    if (!this.camera || !this.canvas || enabled === this.pointerControlEnabled) {
+      return;
+    }
+    if (enabled) {
+      this.camera.attachControl(this.canvas, true);
+    } else {
+      this.camera.detachControl();
+    }
+    this.pointerControlEnabled = enabled;
+  }
 
   build(scene: Scene, canvas: HTMLCanvasElement): ArcRotateCamera {
+    this.canvas = canvas;
     const camera = new ArcRotateCamera(
       'city-camera',
       -Math.PI / 2.6, // alpha: diagonal view
@@ -81,5 +105,7 @@ export class CityCamera {
 
   dispose(): void {
     this.camera = null;
+    this.canvas = null;
+    this.pointerControlEnabled = true;
   }
 }

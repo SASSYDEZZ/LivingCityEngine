@@ -9,16 +9,32 @@ Last updated: 2026-07-12
 
 ## Current sprint
 
-**Sprint 2 — Living World (v0.2.0)** — complete.
+**Sprint 3 — Construction System (v0.3.0)** — complete.
 
-Goal: make the island feel beautiful, inviting, and alive. ✅
+Goal: let players build on the island. ✅
 
-Next up: Sprint 3 — Construction System (Phase 3): grid, building
-placement, roads, bulldozer.
+Next up: Sprint 4 — City Simulation (Phase 4): citizens, homes, jobs,
+needs, economy.
 
 ---
 
 ## Completed tasks
+
+### Sprint 3 — Construction System (v0.3.0)
+
+- [x] Terrain-aware `BuildGrid`: precomputed buildability (height band + slope), occupancy map
+- [x] Ghost building preview following taps/hover, snapped to the grid
+- [x] Valid/invalid highlighting: tinted ghost + per-cell footprint tiles
+- [x] Building rotation (⟳), footprint-aware for rectangular buildings
+- [x] Road drawing with L-shaped snapping and live path preview
+- [x] Bulldozer with shrink-out animation for buildings and road cells
+- [x] Pop-in (ease-out-back) build animation
+- [x] Vegetation auto-clears under new buildings/roads (`clearArea`)
+- [x] Data-driven `BuildingCatalog` (house, cabin) + procedural `BuildingFactory` meshes
+- [x] Touch-first DOM HUD: tool select, rotate/confirm/cancel, active states, safe-area
+- [x] Heightfield `GroundPicker` (no mesh picking) for cheap tap→ground on mobile
+- [x] EventBus in real use: building:placed/removed, road:placed/removed, construction:*
+- [x] End-to-end flow verified headless (place, rotate, road drag, bulldoze) with no console errors
 
 ### Sprint 2 — Living World (v0.2.0)
 
@@ -67,20 +83,24 @@ placement, roads, bulldozer.
 
 ## Upcoming tasks
 
-### World polish (optional, as needed)
+### Construction polish (as needed)
+
+- [ ] Connected road pieces (straight/corner/junction visuals)
+- [ ] Terrain flattening under buildings on slopes
+- [ ] Save/load of placed buildings and roads
+- [ ] Two-finger camera pan while a tool is active
+
+### World polish (long-term visual goals)
 
 - [ ] Touch control tuning on real devices (pan/pinch feel)
-- [ ] Weather foundation (Phase 2 stretch; effects are Phase 6)
+- [ ] Terrain variety: ridges, valleys, natural clearings
+- [ ] Richer biome transitions and color blending
+- [ ] Coastline detail (rocks, reeds, driftwood, flowers)
+- [ ] More organic forests (dense clusters, clearings, varied spacing)
+- [ ] Ambient motion: wind, tree sway, grass movement
+- [ ] Weather foundation (effects are Phase 6)
 - [ ] Game speed controls for the day/night clock
 - [ ] Camera-terrain collision (camera can clip into hills at min zoom)
-
-### Sprint 3 — Construction System (Phase 3)
-
-- [ ] Grid system over the terrain
-- [ ] Building placement + validity rules
-- [ ] Roads
-- [ ] Bulldozer
-- [ ] Construction animations
 
 ### Later phases (see ROADMAP.md)
 

@@ -25,7 +25,15 @@ import type { WorldConfig } from '../WorldConfig';
  * trees cluster in noise-driven "forests" on gentle grassland, rocks
  * prefer slopes and highland, bushes fill meadow edges.
  */
+interface SpeciesInstances {
+  mesh: Mesh;
+  matrices: Float32Array;
+  colors: Float32Array;
+}
+
 export class VegetationSystem {
+  private readonly species: SpeciesInstances[] = [];
+
   constructor(private readonly config: WorldConfig) {}
 
   /** Builds all vegetation; returns meshes that should cast shadows. */
@@ -98,17 +106,68 @@ export class VegetationSystem {
       bushColors.push(tint * 0.95, tint, tint * 0.9, 1);
     });
 
-    applyInstances(roundTree, roundMatrices, roundColors);
-    applyInstances(pineTree, pineMatrices, pineColors);
-    applyInstances(rock, rockMatrices, rockColors);
-    applyInstances(bush, bushMatrices, bushColors);
+    this.applyInstances(roundTree, roundMatrices, roundColors);
+    this.applyInstances(pineTree, pineMatrices, pineColors);
+    this.applyInstances(rock, rockMatrices, rockColors);
+    this.applyInstances(bush, bushMatrices, bushColors);
 
     // Only trees cast shadows — they're tall enough to matter.
     return [roundTree, pineTree];
   }
 
+  /**
+   * Remove vegetation within a radius of a world XZ point — called by
+   * construction when land is cleared for a building or road. Rebuilds
+   * the affected thin-instance buffers (rare, placement-time only).
+   */
+  clearArea(x: number, z: number, radius: number): void {
+    const radiusSq = radius * radius;
+    for (const entry of this.species) {
+      const count = entry.matrices.length / 16;
+      const keep: number[] = [];
+      for (let i = 0; i < count; i += 1) {
+        const dx = entry.matrices[i * 16 + 12]! - x;
+        const dz = entry.matrices[i * 16 + 14]! - z;
+        if (dx * dx + dz * dz > radiusSq) {
+          keep.push(i);
+        }
+      }
+      if (keep.length === count) {
+        continue;
+      }
+      const matrices = new Float32Array(keep.length * 16);
+      const colors = new Float32Array(keep.length * 4);
+      keep.forEach((src, dst) => {
+        matrices.set(entry.matrices.subarray(src * 16, src * 16 + 16), dst * 16);
+        colors.set(entry.colors.subarray(src * 4, src * 4 + 4), dst * 4);
+      });
+      entry.matrices = matrices;
+      entry.colors = colors;
+      if (keep.length === 0) {
+        entry.mesh.setEnabled(false);
+      } else {
+        entry.mesh.thinInstanceSetBuffer('matrix', matrices, 16, true);
+        entry.mesh.thinInstanceSetBuffer('color', colors, 4, true);
+      }
+    }
+  }
+
   dispose(): void {
-    // Meshes/materials are owned by the Babylon scene; nothing to clear.
+    this.species.length = 0;
+  }
+
+  /** Attach thin-instance buffers; hide the template if nothing placed. */
+  private applyInstances(mesh: Mesh, matrices: number[], colors: number[]): void {
+    if (matrices.length === 0) {
+      mesh.setEnabled(false);
+      return;
+    }
+    const matrixData = new Float32Array(matrices);
+    const colorData = new Float32Array(colors);
+    mesh.thinInstanceSetBuffer('matrix', matrixData, 16, true);
+    mesh.thinInstanceSetBuffer('color', colorData, 4, true);
+    mesh.freezeWorldMatrix();
+    this.species.push({ mesh, matrices: matrixData, colors: colorData });
   }
 
   /** Rejection-sample positions on the island and invoke the placer. */
@@ -229,13 +288,3 @@ function finishTemplate(mesh: Mesh, scene: Scene): Mesh {
   return mesh;
 }
 
-/** Attach thin-instance buffers; hide the template if nothing placed. */
-function applyInstances(mesh: Mesh, matrices: number[], colors: number[]): void {
-  if (matrices.length === 0) {
-    mesh.setEnabled(false);
-    return;
-  }
-  mesh.thinInstanceSetBuffer('matrix', new Float32Array(matrices), 16, true);
-  mesh.thinInstanceSetBuffer('color', new Float32Array(colors), 4, true);
-  mesh.freezeWorldMatrix();
-}

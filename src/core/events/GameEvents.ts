@@ -14,4 +14,16 @@ export interface GameEvents extends Record<string, unknown> {
   'engine:resized': { width: number; height: number };
   /** Fired after the active scene changes. */
   'scene:changed': { sceneKey: string };
+  /** Fired when the construction tool mode changes. */
+  'construction:modeChanged': { mode: string; buildingId: string | null };
+  /** Fired whenever the placement preview moves or changes validity. */
+  'construction:previewChanged': { active: boolean; valid: boolean };
+  /** Fired after a building is placed on the grid. */
+  'building:placed': { buildingId: string; col: number; row: number; rotation: number };
+  /** Fired after a building is bulldozed. */
+  'building:removed': { buildingId: string; col: number; row: number };
+  /** Fired after a road path is committed (length in cells). */
+  'road:placed': { length: number };
+  /** Fired after a road cell is bulldozed. */
+  'road:removed': { col: number; row: number };
 }

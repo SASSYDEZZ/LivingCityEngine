@@ -32,10 +32,22 @@ Sprint 1 design decisions: **[docs/SETUP.md](docs/SETUP.md)**.
 | v0.1.0 Foundation | ![Foundation](docs/progress/v0.1.0-foundation.png) |
 | v0.1.5 World Prototype | ![World Prototype](docs/progress/v0.1.5-world-prototype.png) |
 | v0.2.0 Living World | ![Living World](docs/progress/v0.2.0-living-world.png) |
+| v0.3.0 Construction | ![Construction](docs/progress/v0.3.0-construction.png) |
 
 ## Status
 
-**Sprint 2 — Living World** (v0.2.0, current):
+**Sprint 3 — Construction System** (v0.3.0, current):
+
+- ✅ Terrain-aware build grid (precomputed buildability: height band + slope)
+- ✅ Ghost building preview with green/red validity highlighting
+- ✅ Building rotation (footprint-aware for rectangular buildings)
+- ✅ Road drawing with L-shaped grid snapping
+- ✅ Bulldozer with shrink-out animation
+- ✅ Pop-in build animation; vegetation clears under new construction
+- ✅ Touch-first HUD (DOM toolbar, thumb-sized targets, safe-area aware)
+- ✅ Data-driven building catalog (`gameplay/buildings/BuildingCatalog.ts`)
+
+**Sprint 2 — Living World** (v0.2.0, complete):
 
 - ✅ Instanced vegetation: clustered forests (round + pine trees), rocks, bushes — 4 draw calls total
 - ✅ Shoreline foam hugging the coast, driven by a generated shore mask (no textures downloaded)

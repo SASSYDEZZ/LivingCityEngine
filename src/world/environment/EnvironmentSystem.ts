@@ -195,6 +195,15 @@ export class EnvironmentSystem {
     );
   }
 
+  /** Let gameplay objects (buildings) cast shadows. No-op if shadows are off. */
+  addShadowCaster(mesh: Parameters<ShadowGenerator['addShadowCaster']>[0]): void {
+    this.shadowGenerator?.addShadowCaster(mesh);
+  }
+
+  removeShadowCaster(mesh: Parameters<ShadowGenerator['removeShadowCaster']>[0]): void {
+    this.shadowGenerator?.removeShadowCaster(mesh);
+  }
+
   dispose(): void {
     this.shadowGenerator?.dispose();
     this.shadowGenerator = null;
